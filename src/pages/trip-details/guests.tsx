@@ -1,8 +1,9 @@
 import { CircleCheck, CircleDashed, UserCog } from "lucide-react";
 import { Button } from "../../components/button";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { api } from "../../lib/axios";
+import { FormEvent, useEffect, useState } from "react";
+import { InviteSomeoneGuest } from "./invite-someone-guest";
 
 interface Participant {
   id: string;
@@ -14,12 +15,29 @@ interface Participant {
 export function Guests() {
   const { tripId } = useParams();
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isAddMoreGuestsModalOpen, setIsAddMoreGuestsModalOpen] =
+    useState(false);
 
   useEffect(() => {
     api
       .get(`/trips/${tripId}/participants`)
       .then((response) => setParticipants(response.data.participants));
   }, [tripId]);
+
+  function openAddMoreGuestsModal() {
+    setIsAddMoreGuestsModalOpen(true);
+  }
+
+  function closeAddMoreGuestsModal() {
+    setIsAddMoreGuestsModalOpen(false);
+  }
+
+  async function sendInvite(event: FormEvent<HTMLFormElement>) {
+    const data = new FormData(event.currentTarget);
+    const email = data.get("email")?.toString();
+
+    await api.post(`/trips/${tripId}/invites`, { email });
+  }
 
   return (
     <div className="space-y-6">
@@ -43,10 +61,16 @@ export function Guests() {
           </li>
         ))}
       </ul>
-      <Button variant="secondary" size="full">
+      <Button onClick={openAddMoreGuestsModal} variant="secondary" size="full">
         <UserCog className="size-5" />
         Gerenciar convidados
       </Button>
+      {isAddMoreGuestsModalOpen && (
+        <InviteSomeoneGuest
+          closeInviteSomeoneGuest={closeAddMoreGuestsModal}
+          sendInvite={sendInvite}
+        />
+      )}
     </div>
   );
 }
