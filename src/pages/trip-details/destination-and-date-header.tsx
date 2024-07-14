@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/axios";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { UpdateTripModal } from "./update-trip";
 
 interface Trip {
   id: string;
@@ -18,6 +19,16 @@ export function DestinationAndDateHeader() {
   const { tripId } = useParams();
   const [trip, setTrip] = useState<Trip | undefined>();
 
+  const [isUpdateTripModalOpen, setIsUpdateTripModalOpen] = useState(false);
+
+  function openUpdateTripModal() {
+    setIsUpdateTripModalOpen(true);
+  }
+
+  function closeUpdateTripModal() {
+    setIsUpdateTripModalOpen(false);
+  }
+
   useEffect(() => {
     api.get(`/trips/${tripId}`).then((response) => setTrip(response.data.trip));
   }, [tripId]);
@@ -27,6 +38,27 @@ export function DestinationAndDateHeader() {
         .concat(" a ")
         .concat(format(trip.ends_at, "d' de ' LLLL", { locale: ptBR }))
     : null;
+
+  async function handleSave(updatedTrip: {
+    destination: string;
+    starts_at: Date;
+    ends_at: Date;
+  }) {
+    if (!trip) return;
+
+    const updatedTripData = {
+      ...trip,
+      destination: updatedTrip.destination,
+      starts_at: updatedTrip.starts_at.toISOString(),
+      ends_at: updatedTrip.ends_at.toISOString(),
+    };
+
+    await api.put(`/trips/${trip.id}`, updatedTripData).then((response) => {
+      setTrip(response.data.trip);
+      window.location.reload();
+      closeUpdateTripModal();
+    });
+  }
 
   return (
     <div className="px-4 h-16 rounded-xl bg-zinc-900 shadow-shape flex items-center justify-between">
@@ -40,11 +72,19 @@ export function DestinationAndDateHeader() {
           <span className="text-zinc-100">{displayedDate}</span>
         </div>
         <div className="w-px h-6 bg-zinc-800"></div>
-        <Button variant="secondary">
+        <Button onClick={openUpdateTripModal} variant="secondary">
           Alterar local/data
           <Settings2 className="size-5" />
         </Button>
       </div>
+      {isUpdateTripModalOpen && (
+        <UpdateTripModal
+          closeUpdateTripModal={closeUpdateTripModal}
+          destination={trip?.destination}
+          displayedDate={displayedDate}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 }
