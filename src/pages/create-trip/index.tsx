@@ -6,6 +6,8 @@ import { DestinationAndDateStep } from "./steps/destination-and-date-step";
 import { InviteGuestsStep } from "./steps/invite-guests-step";
 import { DateRange } from "react-day-picker";
 import { api } from "../../lib/axios";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export function CreateTripPage() {
   const navigate = useNavigate();
@@ -72,8 +74,6 @@ export function CreateTripPage() {
   async function createTrip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // TODO: Add validation
-
     const response = await api.post("/trips", {
       destination,
       starts_at: eventStartAndEndDates?.from,
@@ -87,6 +87,17 @@ export function CreateTripPage() {
 
     navigate(`/trips/${tripId}`);
   }
+
+  const displayedDate =
+    eventStartAndEndDates &&
+    eventStartAndEndDates.from &&
+    eventStartAndEndDates.to
+      ? format(eventStartAndEndDates.from, "d' de ' LLLL", { locale: ptBR })
+          .concat(" a ")
+          .concat(
+            format(eventStartAndEndDates.to, "d' de ' LLLL", { locale: ptBR })
+          )
+      : null;
 
   return (
     <div className="h-screen flex items-center justify-center bg-pattern bg-no-repeat bg-center">
@@ -143,6 +154,8 @@ export function CreateTripPage() {
           createTrip={createTrip}
           setOwnerName={setOwnerName}
           setOwnerEmail={setOwnerEmail}
+          destination={destination}
+          dates={displayedDate || "--"}
         />
       )}
     </div>
